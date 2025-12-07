@@ -85,103 +85,138 @@ export interface DataverseEntity {
 }
 
 // ============================================
-// Projekt-Tabellen aus dem PRD
+// Projekt-Tabellen (korrigierte Feldnamen aus API)
 // ============================================
 
 /**
- * Haupttabelle: sgsw_digitalisierungsvorhabens
+ * Haupttabelle: cr6df_sgsw_digitalisierungsvorhaben
  * Enthält alle Ideen, Vorhaben und Projekte
  * 
- * EntitySetName (für API): sgsw_digitalisierungsvorhabens
- * Primärschlüssel: sgsw_digitalisierungsvorhabenid
+ * EntitySetName (für API): cr6df_sgsw_digitalisierungsvorhabens
+ * Primärschlüssel: cr6df_sgsw_digitalisierungsvorhabenid
  */
 export interface DigitalisierungsvorhabenRecord extends DataverseEntity {
-  sgsw_digitalisierungsvorhabenid: string;  // GUID (Primary Key)
+  cr6df_sgsw_digitalisierungsvorhabenid: string;  // GUID (Primary Key)
   
-  // Bearbeitbare Felder laut PRD
-  sgsw_titel?: string;
-  sgsw_beschreibung?: string;
-  sgsw_typ?: number;                         // Choice/OptionSet
-  sgsw_verantwortlicher?: string;            // Lookup oder Text
-  sgsw_ideengeber?: string;
-  sgsw_komplexitaet?: number;                // Choice
-  sgsw_kritikalitaet?: number;               // Choice
-  sgsw_lifecyclestatus?: number;             // Choice
-  sgsw_planung_geplanterstart?: string;      // ISO-Datum
-  sgsw_planung_geplantesende?: string;       // ISO-Datum
-  sgsw_detailanalyse_personentage?: number;
-  sgsw_detailanalyse_nutzen?: string;
-  sgsw_itotboard_begruendung?: string;
-  sgsw_pia_pfad?: string;
+  // Basis-Felder
+  cr6df_newcolumn?: string;                  // Primary Name (Idee-ID, z.B. "Idee-ID-1039")
+  cr6df_name?: string;                       // Titel des Vorhabens
+  cr6df_beschreibung?: string;               // Beschreibung
+  cr6df_typ?: number;                        // Choice: 562520000=Idee, etc.
+  
+  // Personen (Lookups)
+  _cr6df_verantwortlicher_value?: string;    // Lookup GUID
+  _cr6df_ideengeber_value?: string;          // Lookup GUID
+  _cr6df_abonnenten_value?: string;          // Lookup GUID
+  
+  // Bewertung
+  cr6df_komplexitaet?: number;               // Choice
+  cr6df_kritikalitaet?: number;              // Choice
+  cr6df_prioritat?: number;                  // Priorität
+  cr6df_initalbewertung_begruendung?: string;
+  
+  // Lifecycle & Status
+  cr6df_lifecyclestatus?: number;            // Choice: 562520000=neu, etc.
+  cr6df_istduplikat?: boolean;
+  
+  // Planung
+  cr6df_planung_geplanterstart?: string;     // ISO-Datum
+  cr6df_planung_geplantesende?: string;      // ISO-Datum
+  
+  // Detailanalyse
+  cr6df_detailanalyse_personentage?: number;
+  cr6df_detailanalyse_ergebnis?: string;     // HTML-Text
+  
+  // ITOT Board
+  cr6df_itotboard_begruendung?: string;
+  
+  // PIA (Privacy Impact Assessment)
+  cr6df_pia_pfad?: string;
+  cr6df_pia_erstellt_am?: string;            // ISO-Datum
+  
+  // Prozess-Daten (Timestamps)
+  cr6df_genehmigt_am?: string;
+  cr6df_abgelehnt_am?: string;
+  cr6df_in_ueberarbeitung_am?: string;
+  cr6df_abgeschlossen_am?: string;
   
   // Verknüpfung zum Business Process Flow
-  _sgsw_stageid_value?: string;              // Lookup zur Stage
+  _stageid_value?: string;
+  processid?: string;
+  traversedpath?: string;
 }
 
 /**
  * Input-Typ für Create/Update von Vorhaben
- * Ohne System-Felder und Primary Key
+ * Ohne System-Felder, Lookups und Primary Key
  */
 export interface DigitalisierungsvorhabenInput {
-  sgsw_titel?: string;
-  sgsw_beschreibung?: string;
-  sgsw_typ?: number;
-  sgsw_verantwortlicher?: string;
-  sgsw_ideengeber?: string;
-  sgsw_komplexitaet?: number;
-  sgsw_kritikalitaet?: number;
-  sgsw_lifecyclestatus?: number;
-  sgsw_planung_geplanterstart?: string;
-  sgsw_planung_geplantesende?: string;
-  sgsw_detailanalyse_personentage?: number;
-  sgsw_detailanalyse_nutzen?: string;
-  sgsw_itotboard_begruendung?: string;
-  sgsw_pia_pfad?: string;
+  cr6df_name?: string;
+  cr6df_beschreibung?: string;
+  cr6df_typ?: number;
+  cr6df_komplexitaet?: number;
+  cr6df_kritikalitaet?: number;
+  cr6df_lifecyclestatus?: number;
+  cr6df_prioritat?: number;
+  cr6df_planung_geplanterstart?: string;
+  cr6df_planung_geplantesende?: string;
+  cr6df_detailanalyse_personentage?: number;
+  cr6df_detailanalyse_ergebnis?: string;
+  cr6df_itotboard_begruendung?: string;
+  cr6df_initalbewertung_begruendung?: string;
+  cr6df_pia_pfad?: string;
+  // Lookup-Bindungen (für Create/Update)
+  'cr6df_Verantwortlicher@odata.bind'?: string;
+  'cr6df_Ideengeber@odata.bind'?: string;
 }
 
 /**
- * Tabelle: sgsw_itotBoardSitzung
- * Speichert Sitzungsprotokolle mit Verknüpfung zu Vorhaben
+ * Tabelle: cr6df_itotboardsitzung
+ * Speichert Sitzungsprotokolle
  * 
- * EntitySetName (für API): sgsw_itotboardsitzungs
- * Primärschlüssel: sgsw_itotboardsitzungid
+ * EntitySetName (für API): cr6df_itotboardsitzungs
+ * Primärschlüssel: cr6df_itotboardsitzungid
  */
 export interface SitzungsprotokollRecord extends DataverseEntity {
-  sgsw_itotboardsitzungid: string;           // GUID (Primary Key)
-  sgsw_name?: string;                        // Primary Name (oft automatisch)
-  sgsw_protokoll?: string;                   // Mehrzeiliger Text
-  sgsw_sitzungsdatum?: string;               // ISO-Datum
-  sgsw_teilnehmer?: string;                  // Text oder Multi-Select
-  
-  // Verknüpfung zum Vorhaben (Lookup)
-  _sgsw_vorhaben_value?: string;             // GUID des verknüpften Vorhabens
+  cr6df_itotboardsitzungid: string;          // GUID (Primary Key)
+  cr6df_sitzungid?: string;                  // Primary Name (z.B. "Sitzung-ID-1000")
+  cr6df_protokoll?: string;                  // Mehrzeiliger Text
+  cr6df_sitzungsdatum?: string;              // ISO-Datum
+  _cr6df_teilnehmer_value?: string;          // Lookup GUID zu Person
 }
 
 /**
  * Input-Typ für Create/Update von Sitzungsprotokollen
  */
 export interface SitzungsprotokollInput {
-  sgsw_protokoll?: string;
-  sgsw_sitzungsdatum?: string;
-  sgsw_teilnehmer?: string;
-  'sgsw_vorhaben@odata.bind'?: string;       // Für Lookup-Verknüpfung: /sgsw_digitalisierungsvorhabens(GUID)
+  cr6df_protokoll?: string;
+  cr6df_sitzungsdatum?: string;
+  // Lookup-Bindung für Teilnehmer
+  'cr6df_Teilnehmer@odata.bind'?: string;
 }
 
 /**
- * Tabelle: cr6df_ideatosolutions
- * Business Process Flow zur Bestimmung der aktuellen Phase
+ * Tabelle: cr6df_ideatosolution (Business Process Flow)
+ * Bestimmt die aktuelle Phase eines Vorhabens
  * 
- * EntitySetName (für API): cr6df_ideatosolutionss
+ * EntitySetName (für API): cr6df_ideatosolutions
  * Primärschlüssel: businessprocessflowinstanceid
  */
 export interface IdeaToSolutionRecord extends DataverseEntity {
   businessprocessflowinstanceid: string;     // GUID (Primary Key)
+  bpf_name?: string;                         // "ideaToSolution"
   
   // Wichtig für Filterung
-  _activestageid_value?: string;             // GUID der aktuellen Stage ("Planung", "Umsetzung")
+  _activestageid_value?: string;             // GUID der aktuellen Stage
+  activestagestartedon?: string;             // Wann Stage begonnen wurde
+  traversedpath?: string;                    // Komma-separierte Stage-GUIDs
   
   // Verknüpfung zum Vorhaben
-  _bpf_sgsw_digitalisierungsvorhabenid_value?: string;
+  _bpf_cr6df_sgsw_digitalisierungsvorhabenid_value?: string;
+  
+  // Status
+  completedon?: string;                      // Wann abgeschlossen (null wenn aktiv)
+  bpf_duration?: number;                     // Dauer in Minuten
 }
 
 // ============================================
