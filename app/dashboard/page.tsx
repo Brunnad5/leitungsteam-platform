@@ -1,18 +1,22 @@
 /**
  * Dashboard-Seite - Listenansicht aller Digitalisierungsvorhaben
  * 
- * Zeigt eine Tabelle aller Vorhaben mit Filtermöglichkeiten.
- * Falls nicht angemeldet, wird der Login-Prompt angezeigt.
+ * Zeigt vier kategorisierte Listen:
+ * 1. In Planung - Projektportfolio
+ * 2. In Planung - Quartalsplanung
+ * 3. In Umsetzung
+ * 4. Alle Items (eingeklappt)
  */
 
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
-import { RefreshCw, LogOut, LayoutDashboard, AlertCircle } from 'lucide-react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
+import Link from 'next/link';
+import { RefreshCw, LogOut, LayoutDashboard, AlertCircle, Home } from 'lucide-react';
 import LoginPrompt from '@/components/dataverse/LoginPrompt';
-import VorhabenTable from '@/components/vorhaben/VorhabenTable';
-import VorhabenFilter, { FilterValues } from '@/components/vorhaben/VorhabenFilter';
+import VorhabenCollapsibleList from '@/components/vorhaben/VorhabenCollapsibleList';
 import { DigitalisierungsvorhabenRecord } from '@/lib/services/dataverse/types';
+import { LIFECYCLE_STATUS } from '@/lib/validators/vorhabenSchema';
 
 // Typen für API-Responses
 interface AuthStatusResponse {
@@ -36,9 +40,6 @@ export default function DashboardPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string>('');
 
-  // Filter
-  const [filters, setFilters] = useState<FilterValues>({});
-
   /**
    * Prüft den Auth-Status beim Laden der Seite
    */
@@ -55,23 +56,14 @@ export default function DashboardPage() {
   }, []);
 
   /**
-   * Lädt die Vorhaben von der API
+   * Lädt alle Vorhaben von der API (ohne Filter)
    */
   const loadVorhaben = useCallback(async () => {
     setIsLoading(true);
     setError('');
 
     try {
-      // Query-Parameter aus Filtern bauen
-      const params = new URLSearchParams();
-      if (filters.typ) params.append('typ', filters.typ);
-      if (filters.kritikalitaet) params.append('kritikalitaet', filters.kritikalitaet);
-      if (filters.search) params.append('search', filters.search);
-
-      const queryString = params.toString();
-      const url = `/api/vorhaben${queryString ? '?' + queryString : ''}`;
-
-      const response = await fetch(url);
+      const response = await fetch('/api/vorhaben');
       const data: VorhabenResponse = await response.json();
 
       if (!data.success) {
@@ -85,7 +77,29 @@ export default function DashboardPage() {
     } finally {
       setIsLoading(false);
     }
-  }, [filters]);
+  }, []);
+
+  /**
+   * Filtert Vorhaben nach Lifecycle-Status
+   */
+  const filteredLists = useMemo(() => {
+    return {
+      // In Planung - Idee in Projektportfolio aufgenommen
+      projektportfolio: vorhaben.filter(
+        (v) => v.cr6df_lifecyclestatus === LIFECYCLE_STATUS.IDEE_IN_PROJEKTPORTFOLIO
+      ),
+      // In Planung - Idee in Quartalsplanung aufgenommen
+      quartalsplanung: vorhaben.filter(
+        (v) => v.cr6df_lifecyclestatus === LIFECYCLE_STATUS.IDEE_IN_QUARTALSPLANUNG
+      ),
+      // In Umsetzung
+      inUmsetzung: vorhaben.filter(
+        (v) => v.cr6df_lifecyclestatus === LIFECYCLE_STATUS.IN_UMSETZUNG
+      ),
+      // Alle
+      alle: vorhaben,
+    };
+  }, [vorhaben]);
 
   /**
    * Logout-Handler
@@ -139,10 +153,13 @@ export default function DashboardPage() {
 
   // Angemeldet - Dashboard anzeigen
   return (
-    <div className="min-h-screen bg-base-100">
+    <div className="min-h-screen bg-base-200">
       {/* Header */}
-      <header className="navbar bg-base-200 shadow-sm">
+      <header className="navbar bg-base-100 shadow-sm">
         <div className="flex-1">
+          <Link href="/" className="btn btn-ghost btn-sm">
+            <Home className="w-4 h-4" />
+          </Link>
           <span className="flex items-center gap-2 text-xl font-semibold px-4">
             <LayoutDashboard className="w-6 h-6" />
             Digitalisierungsvorhaben
@@ -170,12 +187,6 @@ export default function DashboardPage() {
 
       {/* Hauptinhalt */}
       <main className="container mx-auto px-4 py-6 max-w-7xl">
-        {/* Filter */}
-        <VorhabenFilter
-          currentFilters={filters}
-          onFilterChange={setFilters}
-        />
-
         {/* Fehleranzeige */}
         {error && (
           <div className="alert alert-error mb-6">
@@ -187,21 +198,49 @@ export default function DashboardPage() {
           </div>
         )}
 
-        {/* Tabelle */}
-        <div className="card bg-base-100 shadow-sm">
-          <div className="card-body">
-            <div className="flex justify-between items-center mb-4">
-              <h2 className="card-title text-lg">
-                Übersicht
-                {!isLoading && (
-                  <span className="badge badge-neutral">{vorhaben.length}</span>
-                )}
-              </h2>
-            </div>
-            
-            <VorhabenTable vorhaben={vorhaben} isLoading={isLoading} />
+        {/* Loading-Anzeige */}
+        {isLoading && (
+          <div className="flex justify-center py-12">
+            <span className="loading loading-spinner loading-lg"></span>
           </div>
-        </div>
+        )}
+
+        {/* Listen */}
+        {!isLoading && (
+          <div className="space-y-6">
+            {/* 1. In Planung - Projektportfolio */}
+            <VorhabenCollapsibleList
+              title="In Planung – Projektportfolio"
+              vorhaben={filteredLists.projektportfolio}
+              defaultOpen={true}
+              badgeColor="badge-info"
+            />
+
+            {/* 2. In Planung - Quartalsplanung */}
+            <VorhabenCollapsibleList
+              title="In Planung – Quartalsplanung"
+              vorhaben={filteredLists.quartalsplanung}
+              defaultOpen={true}
+              badgeColor="badge-warning"
+            />
+
+            {/* 3. In Umsetzung */}
+            <VorhabenCollapsibleList
+              title="In Umsetzung"
+              vorhaben={filteredLists.inUmsetzung}
+              defaultOpen={true}
+              badgeColor="badge-success"
+            />
+
+            {/* 4. Alle Items (eingeklappt) */}
+            <VorhabenCollapsibleList
+              title="Alle Vorhaben"
+              vorhaben={filteredLists.alle}
+              defaultOpen={false}
+              badgeColor="badge-neutral"
+            />
+          </div>
+        )}
       </main>
     </div>
   );

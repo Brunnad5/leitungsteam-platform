@@ -1,65 +1,115 @@
-import Image from "next/image";
+/**
+ * Startseite - Leitungsteam Platform
+ * 
+ * Zeigt den Auth-Status und leitet zum Dashboard weiter,
+ * oder zeigt den Login-Prompt an.
+ */
 
-export default function Home() {
+'use client';
+
+import { useState, useEffect, useCallback } from 'react';
+import { useRouter } from 'next/navigation';
+import { LayoutDashboard, Loader2 } from 'lucide-react';
+import LoginPrompt from '@/components/dataverse/LoginPrompt';
+
+export default function HomePage() {
+  const router = useRouter();
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
+  const [isChecking, setIsChecking] = useState(true);
+
+  /**
+   * Prüft den Auth-Status beim Laden der Seite
+   */
+  const checkAuthStatus = useCallback(async () => {
+    try {
+      const response = await fetch('/api/dataverse/auth');
+      const data = await response.json();
+      setIsAuthenticated(data.isAuthenticated);
+    } catch {
+      setIsAuthenticated(false);
+    } finally {
+      setIsChecking(false);
+    }
+  }, []);
+
+  /**
+   * Wird aufgerufen, wenn der Login erfolgreich war
+   */
+  const handleLoginSuccess = () => {
+    setIsAuthenticated(true);
+  };
+
+  /**
+   * Navigiert zum Dashboard
+   */
+  const goToDashboard = () => {
+    router.push('/dashboard');
+  };
+
+  // Auth-Status beim Mount prüfen
+  useEffect(() => {
+    checkAuthStatus();
+  }, [checkAuthStatus]);
+
+  // Loading-State
+  if (isChecking) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-base-200">
+        <div className="text-center">
+          <Loader2 className="w-12 h-12 animate-spin mx-auto text-primary" />
+          <p className="mt-4 text-base-content/70">Prüfe Anmeldestatus...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className="flex min-h-screen items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex min-h-screen w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
+    <div className="min-h-screen bg-base-200">
+      {/* Hero Section */}
+      <div className="hero min-h-screen">
+        <div className="hero-content text-center">
+          <div className="max-w-lg">
+            {/* Logo / Titel */}
+            <div className="flex justify-center mb-6">
+              <div className="bg-primary text-primary-content p-4 rounded-2xl">
+                <LayoutDashboard className="w-16 h-16" />
+              </div>
+            </div>
+            
+            <h1 className="text-4xl font-bold mb-4">
+              Leitungsteam Platform
+            </h1>
+            <p className="text-lg text-base-content/70 mb-8">
+              Digitale Übersicht für Ideen, Vorhaben und Projekte. 
+              Verwalte Digitalisierungsvorhaben und dokumentiere Entscheidungen.
+            </p>
+
+            {/* Authentifiziert: Zum Dashboard */}
+            {isAuthenticated && (
+              <div className="space-y-4">
+                <div className="badge badge-success badge-lg gap-2">
+                  <span className="w-2 h-2 bg-success-content rounded-full"></span>
+                  Mit Microsoft verbunden
+                </div>
+                <div>
+                  <button 
+                    className="btn btn-primary btn-lg"
+                    onClick={goToDashboard}
+                  >
+                    <LayoutDashboard className="w-5 h-5" />
+                    Zum Dashboard
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* Nicht authentifiziert: Login */}
+            {!isAuthenticated && (
+              <LoginPrompt onLoginSuccess={handleLoginSuccess} />
+            )}
+          </div>
         </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
-      </main>
+      </div>
     </div>
   );
 }
