@@ -7,12 +7,13 @@
 
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { RefreshCw, AlertCircle } from 'lucide-react';
 import LoginPrompt from '@/components/dataverse/LoginPrompt';
 import AppHeader from '@/components/layout/AppHeader';
 import VorhabenCollapsibleList from '@/components/vorhaben/VorhabenCollapsibleList';
 import { DigitalisierungsvorhabenRecord } from '@/lib/services/dataverse/types';
+import { getPhaseFromStageId } from '@/lib/constants/bpfStages';
 
 // Typen für API-Responses
 interface AuthStatusResponse {
@@ -23,6 +24,7 @@ interface VorhabenResponse {
   success: boolean;
   count?: number;
   data?: DigitalisierungsvorhabenRecord[];
+  bpf?: Record<string, any>; // BPF-Daten als Map
   error?: string;
 }
 
@@ -33,6 +35,7 @@ export default function DashboardPage() {
 
   // Daten
   const [vorhaben, setVorhaben] = useState<DigitalisierungsvorhabenRecord[]>([]);
+  const [bpfData, setBpfData] = useState<Record<string, any>>({});
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string>('');
 
@@ -67,6 +70,7 @@ export default function DashboardPage() {
       }
 
       setVorhaben(data.data || []);
+      setBpfData(data.bpf || {}); // BPF-Daten speichern
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Unbekannter Fehler');
       setVorhaben([]);
@@ -99,6 +103,48 @@ export default function DashboardPage() {
   useEffect(() => {
     checkAuthStatus();
   }, [checkAuthStatus]);
+
+  // Vorhaben nach Phasen filtern (memoized für Performance)
+  const phaseLists = useMemo(() => {
+    if (!vorhaben.length) {
+      return {
+        initialisierung: [],
+        analyseBewertung: [],
+        planung: [],
+        umsetzung: [],
+      };
+    }
+
+    const lists = {
+      initialisierung: [] as DigitalisierungsvorhabenRecord[],
+      analyseBewertung: [] as DigitalisierungsvorhabenRecord[],
+      planung: [] as DigitalisierungsvorhabenRecord[],
+      umsetzung: [] as DigitalisierungsvorhabenRecord[],
+    };
+
+    vorhaben.forEach((item) => {
+      const phase = getPhaseFromStageId(bpfData[item.cr6df_sgsw_digitalisierungsvorhabenid]?.activeStageId);
+      
+      switch (phase) {
+        case 1:
+          lists.initialisierung.push(item);
+          break;
+        case 2:
+          lists.analyseBewertung.push(item);
+          break;
+        case 3:
+          lists.planung.push(item);
+          break;
+        case 4:
+          lists.umsetzung.push(item);
+          break;
+        default:
+          lists.initialisierung.push(item); // Fallback zu Initialisierung
+      }
+    });
+
+    return lists;
+  }, [vorhaben, bpfData]);
 
   // Vorhaben laden, wenn authentifiziert
   useEffect(() => {
@@ -167,14 +213,45 @@ export default function DashboardPage() {
           </div>
         )}
 
-        {/* Liste aller Vorhaben */}
+        {/* Listen nach Phasen unterteilt */}
         {!isLoading && (
-          <VorhabenCollapsibleList
-            title="Alle Vorhaben"
-            vorhaben={vorhaben}
-            defaultOpen={true}
-            badgeColor="badge-neutral"
-          />
+          <div className="space-y-4">
+            {/* Phase 1: Initialisierung */}
+            <VorhabenCollapsibleList
+              title="Phase 1: Initialisierung"
+              vorhaben={phaseLists.initialisierung}
+              defaultOpen={true}
+              badgeColor="badge-info"
+              bpfData={bpfData}
+            />
+            
+            {/* Phase 2: Analyse & Bewertung */}
+            <VorhabenCollapsibleList
+              title="Phase 2: Analyse & Bewertung"
+              vorhaben={phaseLists.analyseBewertung}
+              defaultOpen={phaseLists.analyseBewertung.length > 0}
+              badgeColor="badge-secondary"
+              bpfData={bpfData}
+            />
+            
+            {/* Phase 3: Planung */}
+            <VorhabenCollapsibleList
+              title="Phase 3: Planung"
+              vorhaben={phaseLists.planung}
+              defaultOpen={phaseLists.planung.length > 0}
+              badgeColor="badge-warning"
+              bpfData={bpfData}
+            />
+            
+            {/* Phase 4: Umsetzung */}
+            <VorhabenCollapsibleList
+              title="Phase 4: Umsetzung"
+              vorhaben={phaseLists.umsetzung}
+              defaultOpen={phaseLists.umsetzung.length > 0}
+              badgeColor="badge-success"
+              bpfData={bpfData}
+            />
+          </div>
         )}
       </main>
     </div>

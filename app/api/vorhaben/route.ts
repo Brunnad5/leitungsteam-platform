@@ -7,6 +7,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { getVorhabenService } from '@/lib/services/dataverse/vorhabenService';
+import { bpfService } from '@/lib/services/dataverse/bpfService';
 import { isAuthenticated } from '@/lib/services/dataverse/tokenService';
 import { DigitalisierungsvorhabenInput } from '@/lib/services/dataverse/types';
 
@@ -54,10 +55,25 @@ export async function GET(request: NextRequest) {
       vorhaben = await service.listAll();
     }
 
+    // Parallel BPF-Daten für alle Vorhaben laden
+    const bpfData = await bpfService.getAll();
+    
+    // BPF-Daten als Map für schnellen Lookup erstellen (Key = Vorhaben-ID)
+    const bpfMap = new Map<string, any>();
+    bpfData.forEach(bpf => {
+      if (bpf._bpf_cr6df_sgsw_digitalisierungsvorhabenid_value) {
+        bpfMap.set(bpf._bpf_cr6df_sgsw_digitalisierungsvorhabenid_value, {
+          activeStageId: bpf._activestageid_value,
+          activeStageStartedOn: bpf.activestagestartedon,
+        });
+      }
+    });
+
     return NextResponse.json({
       success: true,
       count: vorhaben.length,
       data: vorhaben,
+      bpf: Object.fromEntries(bpfMap), // Map als Object zurückgeben
     });
   } catch (error) {
     console.error('[API/Vorhaben] GET Fehler:', error);
