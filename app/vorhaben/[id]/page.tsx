@@ -9,7 +9,6 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import Link from 'next/link';
 import { 
   ArrowLeft, 
   RefreshCw, 
@@ -25,6 +24,7 @@ import {
 import LoginPrompt from '@/components/dataverse/LoginPrompt';
 import PlanungModal from '@/components/vorhaben/PlanungModal';
 import PlanungKalender from '@/components/vorhaben/PlanungKalender';
+import BpfProzessfortschritt from '@/components/vorhaben/BpfProzessfortschritt';
 import AppHeader from '@/components/layout/AppHeader';
 import { DigitalisierungsvorhabenRecord } from '@/lib/services/dataverse/types';
 import { 
@@ -32,6 +32,7 @@ import {
   KOMPLEXITAET_OPTIONS, 
   KRITIKALITAET_OPTIONS,
   LIFECYCLE_STATUS_OPTIONS,
+  LIFECYCLE_STATUS,
 } from '@/lib/validators/vorhabenSchema';
 
 // API Response-Typen
@@ -69,6 +70,74 @@ function getOptionLabel(
 function formatDate(dateStr?: string): string {
   if (!dateStr) return '-';
   return new Date(dateStr).toLocaleDateString('de-CH');
+}
+
+/**
+ * Hilfsfunktion: Gibt die Badge-Farbe für den Typ zurück
+ * Idee = blau, Vorhaben = orange, Projekt = grün
+ */
+function getTypBadgeColor(typ?: number): string {
+  if (!typ) return 'badge-neutral';
+  
+  switch (typ) {
+    case 562520000: return 'badge-info'; // Idee
+    case 562520001: return 'badge-warning'; // Vorhaben
+    case 562520002: return 'badge-success'; // Projekt
+    default: return 'badge-neutral';
+  }
+}
+
+/**
+ * Hilfsfunktion: Gibt die Badge-Farbe für den Lifecycle-Status zurück
+ */
+function getLifecycleBadgeColor(status?: number): string {
+  if (!status) return 'badge-neutral';
+  
+  // Initialisierung (blau/info)
+  if (status >= 562520000 && status <= 562520002) return 'badge-info';
+  // Analyse & Bewertung (lila/secondary)
+  if (status >= 562520003 && status <= 562520005) return 'badge-secondary';
+  // Planung (orange/warning)
+  if (status >= 562520006 && status <= 562520009) return 'badge-warning';
+  // Umsetzung (grün/success)
+  if (status >= 562520010 && status <= 562520011) return 'badge-success';
+  
+  return 'badge-neutral';
+}
+
+/**
+ * Hilfsfunktion: Ermittelt die BPF-Phase basierend auf dem Lifecycle-Status
+ * 
+ * BPF-Phasen:
+ * 1 = Initialisierung (Eingereicht, Qualitätsprüfung, Überarbeitung)
+ * 2 = Analyse & Bewertung (Genehmigt, wird ITOT-Board vorgestellt, Abgelehnt)
+ * 3 = Planung (Projektportfolio, Quartalsplanung, Wochenplanung, Detailanalyse)
+ * 4 = Umsetzung (In Umsetzung, Abgeschlossen)
+ */
+function getBpfPhaseFromLifecycle(lifecycleStatus?: number): number {
+  if (!lifecycleStatus) return 1;
+  
+  // Phase 1: Initialisierung (562520000-562520002)
+  if (lifecycleStatus >= 562520000 && lifecycleStatus <= 562520002) {
+    return 1;
+  }
+  
+  // Phase 2: Analyse & Bewertung (562520003-562520005)
+  if (lifecycleStatus >= 562520003 && lifecycleStatus <= 562520005) {
+    return 2;
+  }
+  
+  // Phase 3: Planung (562520006-562520009)
+  if (lifecycleStatus >= 562520006 && lifecycleStatus <= 562520009) {
+    return 3;
+  }
+  
+  // Phase 4: Umsetzung (562520010-562520011)
+  if (lifecycleStatus >= 562520010 && lifecycleStatus <= 562520011) {
+    return 4;
+  }
+  
+  return 1;
 }
 
 export default function VorhabenDetailPage() {
@@ -230,9 +299,9 @@ export default function VorhabenDetailPage() {
       <div className="bg-base-100 border-b">
         <div className="container mx-auto px-4 py-4 max-w-4xl">
           <div className="flex items-center gap-4">
-            <Link href="/dashboard" className="btn btn-ghost btn-sm">
+            <button onClick={() => router.back()} className="btn btn-ghost btn-sm">
               <ArrowLeft className="w-4 h-4" />
-            </Link>
+            </button>
             <div className="flex-1">
               <h1 className="text-xl font-bold">
                 {vorhaben?.cr6df_name || 'Vorhaben laden...'}
@@ -311,27 +380,36 @@ export default function VorhabenDetailPage() {
                   <BarChart3 className="w-5 h-5 text-primary" />
                   Status & Klassifizierung
                 </h3>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-2">
+
+                {/* BPF-Prozessfortschritt zuerst */}
+                <BpfProzessfortschritt
+                  currentPhase={getBpfPhaseFromLifecycle(vorhaben.cr6df_lifecyclestatus)}
+                  phaseSince={vorhaben.modifiedon}
+                />
+
+                {/* Status-Infos mit Badges */}
+                <div className="divider"></div>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                   <div>
-                    <div className="text-sm text-base-content/60">Typ</div>
-                    <div className="font-medium">
+                    <div className="text-sm text-base-content/60 mb-1">Typ</div>
+                    <span className={`badge ${getTypBadgeColor(vorhaben.cr6df_typ)}`}>
                       {getOptionLabel(vorhaben.cr6df_typ, TYP_OPTIONS)}
-                    </div>
+                    </span>
                   </div>
                   <div>
-                    <div className="text-sm text-base-content/60">Lifecycle-Status</div>
-                    <div className="font-medium">
+                    <div className="text-sm text-base-content/60 mb-1">Lifecycle-Status</div>
+                    <span className={`badge ${getLifecycleBadgeColor(vorhaben.cr6df_lifecyclestatus)}`}>
                       {getOptionLabel(vorhaben.cr6df_lifecyclestatus, LIFECYCLE_STATUS_OPTIONS)}
-                    </div>
+                    </span>
                   </div>
                   <div>
-                    <div className="text-sm text-base-content/60">Kritikalität</div>
+                    <div className="text-sm text-base-content/60 mb-1">Kritikalität</div>
                     <div className="font-medium">
                       {getOptionLabel(vorhaben.cr6df_kritikalitaet, KRITIKALITAET_OPTIONS)}
                     </div>
                   </div>
                   <div>
-                    <div className="text-sm text-base-content/60">Komplexität</div>
+                    <div className="text-sm text-base-content/60 mb-1">Komplexität</div>
                     <div className="font-medium">
                       {getOptionLabel(vorhaben.cr6df_komplexitaet, KOMPLEXITAET_OPTIONS)}
                     </div>

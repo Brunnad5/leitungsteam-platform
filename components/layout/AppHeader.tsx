@@ -8,7 +8,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { LayoutDashboard, Home, LogOut } from 'lucide-react';
+import { LayoutDashboard, Home, LogOut, CalendarDays } from 'lucide-react';
 
 interface AppHeaderProps {
   onLogout?: () => void;
@@ -22,6 +22,7 @@ export default function AppHeader({ onLogout, isAuthenticated = true }: AppHeade
   const navLinks = [
     { href: '/', label: 'Start', icon: Home },
     { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
+    { href: '/planung', label: 'Planung', icon: CalendarDays },
   ];
 
   return (

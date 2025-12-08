@@ -1,18 +1,23 @@
 /**
- * Dashboard-Seite - Übersicht aller Digitalisierungsvorhaben
+ * Planung-Seite - Übersicht aller Vorhaben in Planungsphasen
  * 
- * Zeigt eine Liste aller Vorhaben.
- * Die Planungs-Listen sind unter /planung zu finden.
+ * Zeigt vier kategorisierte Listen:
+ * 1. In Planung - Projektportfolio
+ * 2. In Planung - Quartalsplanung
+ * 3. In Planung - Wochenplanung
+ * 4. In Umsetzung
  */
 
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { RefreshCw, AlertCircle } from 'lucide-react';
 import LoginPrompt from '@/components/dataverse/LoginPrompt';
 import AppHeader from '@/components/layout/AppHeader';
 import VorhabenCollapsibleList from '@/components/vorhaben/VorhabenCollapsibleList';
+import PlanungUebersichtKalender from '@/components/vorhaben/PlanungUebersichtKalender';
 import { DigitalisierungsvorhabenRecord } from '@/lib/services/dataverse/types';
+import { LIFECYCLE_STATUS } from '@/lib/validators/vorhabenSchema';
 
 // Typen für API-Responses
 interface AuthStatusResponse {
@@ -21,12 +26,11 @@ interface AuthStatusResponse {
 
 interface VorhabenResponse {
   success: boolean;
-  count?: number;
   data?: DigitalisierungsvorhabenRecord[];
   error?: string;
 }
 
-export default function DashboardPage() {
+export default function PlanungPage() {
   // Auth-Status
   const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
   const [isCheckingAuth, setIsCheckingAuth] = useState(true);
@@ -37,7 +41,7 @@ export default function DashboardPage() {
   const [error, setError] = useState<string>('');
 
   /**
-   * Prüft den Auth-Status beim Laden der Seite
+   * Prüft den Auth-Status
    */
   const checkAuthStatus = useCallback(async () => {
     try {
@@ -52,7 +56,7 @@ export default function DashboardPage() {
   }, []);
 
   /**
-   * Lädt alle Vorhaben von der API (ohne Filter)
+   * Lädt alle Vorhaben von der API
    */
   const loadVorhaben = useCallback(async () => {
     setIsLoading(true);
@@ -82,20 +86,19 @@ export default function DashboardPage() {
     try {
       await fetch('/api/dataverse/auth', { method: 'DELETE' });
       setIsAuthenticated(false);
-      setVorhaben([]);
     } catch (err) {
       console.error('Logout-Fehler:', err);
     }
   };
 
   /**
-   * Wird aufgerufen, wenn der Login erfolgreich war
+   * Login-Success Handler
    */
   const handleLoginSuccess = () => {
     setIsAuthenticated(true);
   };
 
-  // Auth-Status beim Mount prüfen
+  // Auth-Status prüfen beim ersten Laden
   useEffect(() => {
     checkAuthStatus();
   }, [checkAuthStatus]);
@@ -107,6 +110,36 @@ export default function DashboardPage() {
     }
   }, [isAuthenticated, loadVorhaben]);
 
+  /**
+   * Filtert Vorhaben nach Lifecycle-Status
+   * 
+   * Lifecycle-Status Werte (aus Dataverse):
+   * - 562520006 = Idee in Projektportfolio aufgenommen
+   * - 562520007 = Idee in Quartalsplanung aufgenommen
+   * - 562520008 = Idee in Wochenplanung aufgenommen
+   * - 562520010 = In Umsetzung
+   */
+  const filteredLists = useMemo(() => {
+    return {
+      // In Planung - Projektportfolio
+      projektportfolio: vorhaben.filter(
+        (v) => v.cr6df_lifecyclestatus === LIFECYCLE_STATUS.IDEE_IN_PROJEKTPORTFOLIO
+      ),
+      // In Planung - Quartalsplanung
+      quartalsplanung: vorhaben.filter(
+        (v) => v.cr6df_lifecyclestatus === LIFECYCLE_STATUS.IDEE_IN_QUARTALSPLANUNG
+      ),
+      // In Planung - Wochenplanung
+      wochenplanung: vorhaben.filter(
+        (v) => v.cr6df_lifecyclestatus === LIFECYCLE_STATUS.IDEE_IN_WOCHENPLANUNG
+      ),
+      // In Umsetzung
+      inUmsetzung: vorhaben.filter(
+        (v) => v.cr6df_lifecyclestatus === LIFECYCLE_STATUS.IN_UMSETZUNG
+      ),
+    };
+  }, [vorhaben]);
+
   // Loading-State beim ersten Laden
   if (isCheckingAuth) {
     return (
@@ -116,7 +149,7 @@ export default function DashboardPage() {
     );
   }
 
-  // Nicht angemeldet - Login anzeigen
+  // Nicht angemeldet
   if (!isAuthenticated) {
     return (
       <div className="min-h-screen flex items-center justify-center p-4">
@@ -125,16 +158,16 @@ export default function DashboardPage() {
     );
   }
 
-  // Angemeldet - Dashboard anzeigen
+  // Angemeldet - Planung anzeigen
   return (
     <div className="min-h-screen bg-base-200">
       {/* App Header */}
       <AppHeader onLogout={handleLogout} isAuthenticated={isAuthenticated} />
 
-      {/* Sub-Header mit Titel und Refresh */}
+      {/* Sub-Header */}
       <div className="bg-base-100 border-b">
         <div className="container mx-auto px-4 py-3 max-w-7xl flex justify-between items-center">
-          <h1 className="text-xl font-bold">Digitalisierungsvorhaben</h1>
+          <h1 className="text-xl font-bold">Planung</h1>
           <button
             className="btn btn-ghost btn-sm"
             onClick={loadVorhaben}
@@ -160,21 +193,55 @@ export default function DashboardPage() {
           </div>
         )}
 
-        {/* Loading-Anzeige */}
+        {/* Loading */}
         {isLoading && (
           <div className="flex justify-center py-12">
             <span className="loading loading-spinner loading-lg"></span>
           </div>
         )}
 
-        {/* Liste aller Vorhaben */}
+        {/* Kalenderansicht */}
+        {!isLoading && vorhaben.length > 0 && (
+          <div className="mb-6">
+            <PlanungUebersichtKalender vorhaben={vorhaben} />
+          </div>
+        )}
+
+        {/* Listen */}
         {!isLoading && (
-          <VorhabenCollapsibleList
-            title="Alle Vorhaben"
-            vorhaben={vorhaben}
-            defaultOpen={true}
-            badgeColor="badge-neutral"
-          />
+          <div className="space-y-4">
+            {/* In Planung - Projektportfolio */}
+            <VorhabenCollapsibleList
+              title="In Planung - Projektportfolio"
+              vorhaben={filteredLists.projektportfolio}
+              defaultOpen={true}
+              badgeColor="badge-info"
+            />
+
+            {/* In Planung - Quartalsplanung */}
+            <VorhabenCollapsibleList
+              title="In Planung - Quartalsplanung"
+              vorhaben={filteredLists.quartalsplanung}
+              defaultOpen={true}
+              badgeColor="badge-warning"
+            />
+
+            {/* In Planung - Wochenplanung */}
+            <VorhabenCollapsibleList
+              title="In Planung - Wochenplanung"
+              vorhaben={filteredLists.wochenplanung}
+              defaultOpen={true}
+              badgeColor="badge-secondary"
+            />
+
+            {/* In Umsetzung */}
+            <VorhabenCollapsibleList
+              title="In Umsetzung"
+              vorhaben={filteredLists.inUmsetzung}
+              defaultOpen={true}
+              badgeColor="badge-success"
+            />
+          </div>
         )}
       </main>
     </div>
