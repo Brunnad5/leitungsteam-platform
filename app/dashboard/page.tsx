@@ -11,9 +11,9 @@
 'use client';
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
-import Link from 'next/link';
-import { RefreshCw, LogOut, LayoutDashboard, AlertCircle, Home } from 'lucide-react';
+import { RefreshCw, AlertCircle } from 'lucide-react';
 import LoginPrompt from '@/components/dataverse/LoginPrompt';
+import AppHeader from '@/components/layout/AppHeader';
 import VorhabenCollapsibleList from '@/components/vorhaben/VorhabenCollapsibleList';
 import { DigitalisierungsvorhabenRecord } from '@/lib/services/dataverse/types';
 import { LIFECYCLE_STATUS } from '@/lib/validators/vorhabenSchema';
@@ -81,18 +81,19 @@ export default function DashboardPage() {
 
   /**
    * Filtert Vorhaben nach Lifecycle-Status
+   * Die Werte entsprechen den korrekten Dataverse OptionSet-Werten
    */
   const filteredLists = useMemo(() => {
     return {
-      // In Planung - Idee in Projektportfolio aufgenommen
+      // In Planung - Idee in Projektportfolio aufgenommen (562520006)
       projektportfolio: vorhaben.filter(
         (v) => v.cr6df_lifecyclestatus === LIFECYCLE_STATUS.IDEE_IN_PROJEKTPORTFOLIO
       ),
-      // In Planung - Idee in Quartalsplanung aufgenommen
+      // In Planung - Idee in Quartalsplanung aufgenommen (562520007)
       quartalsplanung: vorhaben.filter(
         (v) => v.cr6df_lifecyclestatus === LIFECYCLE_STATUS.IDEE_IN_QUARTALSPLANUNG
       ),
-      // In Umsetzung
+      // In Umsetzung (562520010)
       inUmsetzung: vorhaben.filter(
         (v) => v.cr6df_lifecyclestatus === LIFECYCLE_STATUS.IN_UMSETZUNG
       ),
@@ -154,18 +155,13 @@ export default function DashboardPage() {
   // Angemeldet - Dashboard anzeigen
   return (
     <div className="min-h-screen bg-base-200">
-      {/* Header */}
-      <header className="navbar bg-base-100 shadow-sm">
-        <div className="flex-1">
-          <Link href="/" className="btn btn-ghost btn-sm">
-            <Home className="w-4 h-4" />
-          </Link>
-          <span className="flex items-center gap-2 text-xl font-semibold px-4">
-            <LayoutDashboard className="w-6 h-6" />
-            Digitalisierungsvorhaben
-          </span>
-        </div>
-        <div className="flex-none gap-2">
+      {/* App Header */}
+      <AppHeader onLogout={handleLogout} isAuthenticated={isAuthenticated} />
+
+      {/* Sub-Header mit Titel und Refresh */}
+      <div className="bg-base-100 border-b">
+        <div className="container mx-auto px-4 py-3 max-w-7xl flex justify-between items-center">
+          <h1 className="text-xl font-bold">Digitalisierungsvorhaben</h1>
           <button
             className="btn btn-ghost btn-sm"
             onClick={loadVorhaben}
@@ -173,17 +169,10 @@ export default function DashboardPage() {
             title="Daten neu laden"
           >
             <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} />
-          </button>
-          <button
-            className="btn btn-ghost btn-sm"
-            onClick={handleLogout}
-            title="Abmelden"
-          >
-            <LogOut className="w-4 h-4" />
-            Abmelden
+            Aktualisieren
           </button>
         </div>
-      </header>
+      </div>
 
       {/* Hauptinhalt */}
       <main className="container mx-auto px-4 py-6 max-w-7xl">

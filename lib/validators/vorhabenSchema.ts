@@ -112,28 +112,32 @@ export const KRITIKALITAET_OPTIONS = [
 // Lifecycle-Status (basierend auf den Daten)
 // HINWEIS: Diese Werte müssen ggf. an die tatsächlichen Dataverse-OptionSet-Werte angepasst werden
 export const LIFECYCLE_STATUS_OPTIONS = [
-  { value: 562520000, label: 'Neu' },
-  { value: 562520001, label: 'Idee in Projektportfolio aufgenommen' },
-  { value: 562520002, label: 'Idee in Quartalsplanung aufgenommen' },
-  { value: 562520003, label: 'In Prüfung' },
+  { value: 562520000, label: 'Eingereicht' },
+  { value: 562520001, label: 'Idee in Qualitätsprüfung' },
+  { value: 562520002, label: 'Idee zur Überarbeitung an Ideengebenden' },
+  { value: 562520003, label: 'Genehmigt' },
   { value: 562520004, label: 'Abgelehnt' },
-  { value: 562520005, label: 'Genehmigt' },
-  { value: 562520006, label: 'In Planung' },
-  { value: 562520007, label: 'In Umsetzung' },
-  { value: 562520009, label: 'In Überarbeitung' },
+  { value: 562520005, label: 'Idee wird ITOT-Board vorgestellt' },
+  { value: 562520006, label: 'Idee in Projektportfolio aufgenommen' },
+  { value: 562520007, label: 'Idee in Quartalsplanung aufgenommen' },
+  { value: 562520008, label: 'Idee in Wochenplanung aufgenommen' },
+  { value: 562520009, label: 'Idee in Detailanalyse' },
+  { value: 562520010, label: 'In Umsetzung' },
   { value: 562520011, label: 'Abgeschlossen' },
 ] as const;
 
 // Konstanten für Dashboard-Filter
 export const LIFECYCLE_STATUS = {
-  NEU: 562520000,
-  IDEE_IN_PROJEKTPORTFOLIO: 562520001,
-  IDEE_IN_QUARTALSPLANUNG: 562520002,
-  IN_PRUEFUNG: 562520003,
+  EINGEREICHT: 562520000,
+  IDEE_IN_QUALITAETSPRUEFUNG: 562520001,
+  UEBERARBEITUNG: 562520002,
+  GENEHMIGT: 562520003,
   ABGELEHNT: 562520004,
-  GENEHMIGT: 562520005,
-  IN_PLANUNG: 562520006,
-  IN_UMSETZUNG: 562520007,
-  IN_UEBERARBEITUNG: 562520009,
+  IDEE_WIRD_ITOT_BOARD_VORGESTELLT: 562520005,
+  IDEE_IN_PROJEKTPORTFOLIO: 562520006,
+  IDEE_IN_QUARTALSPLANUNG: 562520007,
+  IDEE_IN_WOCHENPLANUNG: 562520008,
+  IDEE_IN_DETAILANALYSE: 562520009,
+  IN_UMSETZUNG: 562520010,
   ABGESCHLOSSEN: 562520011,
 } as const;
