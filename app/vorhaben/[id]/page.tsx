@@ -355,33 +355,43 @@ export default function VorhabenDetailPage() {
                   phaseSince={bpfData?.activestagestartedon}
                 />
 
-                {/* Status-Infos mit Badges */}
+                {/* Status-Infos mit Badges - Tabellen-Layout wie Dashboard */}
                 <div className="divider"></div>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                  <div>
-                    <div className="text-sm text-base-content/60 mb-1">Typ</div>
-                    <span className={`badge ${getTypBadgeColor(vorhaben.cr6df_typ)}`}>
-                      {getOptionLabel(vorhaben.cr6df_typ, TYP_OPTIONS)}
-                    </span>
-                  </div>
-                  <div>
-                    <div className="text-sm text-base-content/60 mb-1">Lifecycle-Status</div>
-                    <span className={`badge ${getLifecycleBadgeColor(vorhaben.cr6df_lifecyclestatus)}`}>
-                      {getOptionLabel(vorhaben.cr6df_lifecyclestatus, LIFECYCLE_STATUS_OPTIONS)}
-                    </span>
-                  </div>
-                  <div>
-                    <div className="text-sm text-base-content/60 mb-1">Kritikalität</div>
-                    <div className="font-medium">
-                      {getOptionLabel(vorhaben.cr6df_kritikalitaet, KRITIKALITAET_OPTIONS)}
-                    </div>
-                  </div>
-                  <div>
-                    <div className="text-sm text-base-content/60 mb-1">Komplexität</div>
-                    <div className="font-medium">
-                      {getOptionLabel(vorhaben.cr6df_komplexitaet, KOMPLEXITAET_OPTIONS)}
-                    </div>
-                  </div>
+                <div className="overflow-x-auto">
+                  <table className="table table-sm">
+                    <thead>
+                      <tr>
+                        <th>Typ</th>
+                        <th>Lifecycle-Status</th>
+                        <th>Kritikalität</th>
+                        <th>Komplexität</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr>
+                        <td>
+                          <span className={`badge ${getTypBadgeColor(vorhaben.cr6df_typ)}`}>
+                            {getOptionLabel(vorhaben.cr6df_typ, TYP_OPTIONS)}
+                          </span>
+                        </td>
+                        <td>
+                          <span className={`badge ${getLifecycleBadgeColor(vorhaben.cr6df_lifecyclestatus)}`}>
+                            {getOptionLabel(vorhaben.cr6df_lifecyclestatus, LIFECYCLE_STATUS_OPTIONS)}
+                          </span>
+                        </td>
+                        <td>
+                          <span className="font-medium">
+                            {getOptionLabel(vorhaben.cr6df_kritikalitaet, KRITIKALITAET_OPTIONS)}
+                          </span>
+                        </td>
+                        <td>
+                          <span className="font-medium">
+                            {getOptionLabel(vorhaben.cr6df_komplexitaet, KOMPLEXITAET_OPTIONS)}
+                          </span>
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
                 </div>
               </div>
             </div>
