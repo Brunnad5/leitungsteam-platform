@@ -26,13 +26,13 @@ import PlanungModal from '@/components/vorhaben/PlanungModal';
 import PlanungKalender from '@/components/vorhaben/PlanungKalender';
 import BpfProzessfortschritt from '@/components/vorhaben/BpfProzessfortschritt';
 import AppHeader from '@/components/layout/AppHeader';
-import { DigitalisierungsvorhabenRecord } from '@/lib/services/dataverse/types';
+import { DigitalisierungsvorhabenRecord, IdeaToSolutionRecord } from '@/lib/services/dataverse/types';
+import { getPhaseFromStageId } from '@/lib/constants/bpfStages';
 import { 
   TYP_OPTIONS, 
   KOMPLEXITAET_OPTIONS, 
   KRITIKALITAET_OPTIONS,
   LIFECYCLE_STATUS_OPTIONS,
-  LIFECYCLE_STATUS,
 } from '@/lib/validators/vorhabenSchema';
 
 // API Response-Typen
@@ -43,6 +43,7 @@ interface AuthStatusResponse {
 interface VorhabenResponse {
   success: boolean;
   data?: DigitalisierungsvorhabenRecord;
+  bpf?: IdeaToSolutionRecord | null;
   error?: string;
 }
 
@@ -105,41 +106,6 @@ function getLifecycleBadgeColor(status?: number): string {
   return 'badge-neutral';
 }
 
-/**
- * Hilfsfunktion: Ermittelt die BPF-Phase basierend auf dem Lifecycle-Status
- * 
- * BPF-Phasen:
- * 1 = Initialisierung (Eingereicht, Qualitätsprüfung, Überarbeitung)
- * 2 = Analyse & Bewertung (Genehmigt, wird ITOT-Board vorgestellt, Abgelehnt)
- * 3 = Planung (Projektportfolio, Quartalsplanung, Wochenplanung, Detailanalyse)
- * 4 = Umsetzung (In Umsetzung, Abgeschlossen)
- */
-function getBpfPhaseFromLifecycle(lifecycleStatus?: number): number {
-  if (!lifecycleStatus) return 1;
-  
-  // Phase 1: Initialisierung (562520000-562520002)
-  if (lifecycleStatus >= 562520000 && lifecycleStatus <= 562520002) {
-    return 1;
-  }
-  
-  // Phase 2: Analyse & Bewertung (562520003-562520005)
-  if (lifecycleStatus >= 562520003 && lifecycleStatus <= 562520005) {
-    return 2;
-  }
-  
-  // Phase 3: Planung (562520006-562520009)
-  if (lifecycleStatus >= 562520006 && lifecycleStatus <= 562520009) {
-    return 3;
-  }
-  
-  // Phase 4: Umsetzung (562520010-562520011)
-  if (lifecycleStatus >= 562520010 && lifecycleStatus <= 562520011) {
-    return 4;
-  }
-  
-  return 1;
-}
-
 export default function VorhabenDetailPage() {
   const params = useParams();
   const router = useRouter();
@@ -151,6 +117,7 @@ export default function VorhabenDetailPage() {
 
   // Daten
   const [vorhaben, setVorhaben] = useState<DigitalisierungsvorhabenRecord | null>(null);
+  const [bpfData, setBpfData] = useState<IdeaToSolutionRecord | null>(null);
   const [allVorhaben, setAllVorhaben] = useState<DigitalisierungsvorhabenRecord[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string>('');
@@ -198,6 +165,7 @@ export default function VorhabenDetailPage() {
       }
 
       setVorhaben(detailData.data || null);
+      setBpfData(detailData.bpf || null); // BPF-Daten speichern
       setAllVorhaben(listData.data || []);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Unbekannter Fehler');
@@ -381,10 +349,10 @@ export default function VorhabenDetailPage() {
                   Status & Klassifizierung
                 </h3>
 
-                {/* BPF-Prozessfortschritt zuerst */}
+                {/* BPF-Prozessfortschritt zuerst - verwendet echte BPF-Daten */}
                 <BpfProzessfortschritt
-                  currentPhase={getBpfPhaseFromLifecycle(vorhaben.cr6df_lifecyclestatus)}
-                  phaseSince={vorhaben.modifiedon}
+                  currentPhase={getPhaseFromStageId(bpfData?._activestageid_value)}
+                  phaseSince={bpfData?.activestagestartedon}
                 />
 
                 {/* Status-Infos mit Badges */}

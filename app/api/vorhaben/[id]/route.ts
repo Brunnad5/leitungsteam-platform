@@ -8,6 +8,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { getVorhabenService } from '@/lib/services/dataverse/vorhabenService';
+import { bpfService } from '@/lib/services/dataverse/bpfService';
 import { isAuthenticated } from '@/lib/services/dataverse/tokenService';
 import { DigitalisierungsvorhabenInput } from '@/lib/services/dataverse/types';
 
@@ -39,11 +40,17 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
     }
 
     const service = getVorhabenService();
-    const vorhaben = await service.getById(id);
+    
+    // Parallel laden: Vorhaben und BPF-Daten
+    const [vorhaben, bpfData] = await Promise.all([
+      service.getById(id),
+      bpfService.getByVorhabenId(id),
+    ]);
 
     return NextResponse.json({
       success: true,
       data: vorhaben,
+      bpf: bpfData, // BPF-Daten separat zurückgeben
     });
   } catch (error) {
     console.error('[API/Vorhaben/ID] GET Fehler:', error);
