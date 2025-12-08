@@ -24,6 +24,7 @@ import {
 } from 'lucide-react';
 import LoginPrompt from '@/components/dataverse/LoginPrompt';
 import PlanungModal from '@/components/vorhaben/PlanungModal';
+import PlanungKalender from '@/components/vorhaben/PlanungKalender';
 import AppHeader from '@/components/layout/AppHeader';
 import { DigitalisierungsvorhabenRecord } from '@/lib/services/dataverse/types';
 import { 
@@ -41,6 +42,12 @@ interface AuthStatusResponse {
 interface VorhabenResponse {
   success: boolean;
   data?: DigitalisierungsvorhabenRecord;
+  error?: string;
+}
+
+interface VorhabenListResponse {
+  success: boolean;
+  data?: DigitalisierungsvorhabenRecord[];
   error?: string;
 }
 
@@ -75,6 +82,7 @@ export default function VorhabenDetailPage() {
 
   // Daten
   const [vorhaben, setVorhaben] = useState<DigitalisierungsvorhabenRecord | null>(null);
+  const [allVorhaben, setAllVorhaben] = useState<DigitalisierungsvorhabenRecord[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string>('');
 
@@ -98,7 +106,7 @@ export default function VorhabenDetailPage() {
   }, []);
 
   /**
-   * Lädt das Vorhaben von der API
+   * Lädt das Vorhaben und alle anderen Vorhaben für die Kalenderansicht
    */
   const loadVorhaben = useCallback(async () => {
     if (!id) return;
@@ -107,14 +115,21 @@ export default function VorhabenDetailPage() {
     setError('');
 
     try {
-      const response = await fetch(`/api/vorhaben/${id}`);
-      const data: VorhabenResponse = await response.json();
+      // Parallel laden: Aktuelles Vorhaben und alle Vorhaben
+      const [detailResponse, listResponse] = await Promise.all([
+        fetch(`/api/vorhaben/${id}`),
+        fetch('/api/vorhaben'),
+      ]);
 
-      if (!data.success) {
-        throw new Error(data.error || 'Fehler beim Laden');
+      const detailData: VorhabenResponse = await detailResponse.json();
+      const listData: VorhabenListResponse = await listResponse.json();
+
+      if (!detailData.success) {
+        throw new Error(detailData.error || 'Fehler beim Laden');
       }
 
-      setVorhaben(data.data || null);
+      setVorhaben(detailData.data || null);
+      setAllVorhaben(listData.data || []);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Unbekannter Fehler');
       setVorhaben(null);
@@ -124,16 +139,19 @@ export default function VorhabenDetailPage() {
   }, [id]);
 
   /**
-   * Speichert die Planungsdaten
+   * Speichert die Planungsdaten inkl. Personentage
    */
-  const handleSavePlanung = async (data: { start: string; ende: string }) => {
-    const dataToSend: Record<string, string | null> = {};
+  const handleSavePlanung = async (data: { start: string; ende: string; personentage: number | null }) => {
+    const dataToSend: Record<string, string | number | null> = {};
     
     if (data.start) {
       dataToSend.cr6df_planung_geplanterstart = `${data.start}T00:00:00Z`;
     }
     if (data.ende) {
       dataToSend.cr6df_planung_geplantesende = `${data.ende}T00:00:00Z`;
+    }
+    if (data.personentage !== null) {
+      dataToSend.cr6df_detailanalyse_personentage = data.personentage;
     }
 
     const response = await fetch(`/api/vorhaben/${id}`, {
@@ -383,20 +401,13 @@ export default function VorhabenDetailPage() {
                   </div>
                 </div>
 
-                {/* Visuelle Zeitleiste wenn Daten vorhanden */}
-                {vorhaben.cr6df_planung_geplanterstart && vorhaben.cr6df_planung_geplantesende && (
-                  <div className="bg-base-200 rounded-lg p-4 mt-4">
-                    <div className="flex items-center gap-2 text-sm">
-                      <span className="badge badge-primary">
-                        {formatDate(vorhaben.cr6df_planung_geplanterstart)}
-                      </span>
-                      <div className="flex-1 h-1 bg-primary/30 rounded"></div>
-                      <span className="badge badge-primary">
-                        {formatDate(vorhaben.cr6df_planung_geplantesende)}
-                      </span>
-                    </div>
-                  </div>
-                )}
+                {/* Kalender-Ansicht mit anderen Vorhaben */}
+                <div className="mt-4">
+                  <PlanungKalender
+                    currentVorhaben={vorhaben}
+                    otherVorhaben={allVorhaben}
+                  />
+                </div>
               </div>
             </div>
 
@@ -439,6 +450,7 @@ export default function VorhabenDetailPage() {
         onSave={handleSavePlanung}
         initialStart={vorhaben?.cr6df_planung_geplanterstart}
         initialEnde={vorhaben?.cr6df_planung_geplantesende}
+        initialPersonentage={vorhaben?.cr6df_detailanalyse_personentage}
       />
     </div>
   );

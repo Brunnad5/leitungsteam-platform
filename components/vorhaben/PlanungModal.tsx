@@ -13,9 +13,10 @@ import { X, Calendar, Save, Loader2 } from 'lucide-react';
 interface PlanungModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSave: (data: { start: string; ende: string }) => Promise<void>;
+  onSave: (data: { start: string; ende: string; personentage: number | null }) => Promise<void>;
   initialStart?: string;
   initialEnde?: string;
+  initialPersonentage?: number | null;
 }
 
 /**
@@ -41,9 +42,11 @@ export default function PlanungModal({
   onSave,
   initialStart,
   initialEnde,
+  initialPersonentage,
 }: PlanungModalProps) {
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
+  const [personentage, setPersonentage] = useState<string>('');
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState('');
 
@@ -52,9 +55,10 @@ export default function PlanungModal({
     if (isOpen) {
       setStartDate(formatDateInput(initialStart));
       setEndDate(formatDateInput(initialEnde));
+      setPersonentage(initialPersonentage?.toString() || '');
       setError('');
     }
-  }, [isOpen, initialStart, initialEnde]);
+  }, [isOpen, initialStart, initialEnde, initialPersonentage]);
 
   /**
    * Validiert die Eingaben
@@ -83,6 +87,7 @@ export default function PlanungModal({
       await onSave({
         start: startDate,
         ende: endDate,
+        personentage: personentage ? parseInt(personentage, 10) : null,
       });
       onClose();
     } catch (err) {
@@ -173,6 +178,27 @@ export default function PlanungModal({
                 </span>
               </label>
             )}
+          </div>
+
+          {/* Personentage */}
+          <div className="form-control">
+            <label className="label">
+              <span className="label-text font-medium">Geschätzte Personentage</span>
+            </label>
+            <input
+              type="number"
+              min="0"
+              step="0.5"
+              placeholder="z.B. 10"
+              className="input input-bordered w-full"
+              value={personentage}
+              onChange={(e) => setPersonentage(e.target.value)}
+            />
+            <label className="label">
+              <span className="label-text-alt text-base-content/70">
+                Aufwand in Personentagen (PT)
+              </span>
+            </label>
           </div>
 
           {/* Visuelle Zeitleiste */}
