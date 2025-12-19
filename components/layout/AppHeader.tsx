@@ -9,6 +9,7 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { LayoutDashboard, Home, LogOut, CalendarDays } from 'lucide-react';
+import SgswLogo from '@/components/branding/SgswLogo';
 
 interface AppHeaderProps {
   onLogout?: () => void;
@@ -30,8 +31,8 @@ export default function AppHeader({ onLogout, isAuthenticated = true }: AppHeade
       {/* Logo / Titel */}
       <div className="flex-1">
         <Link href="/" className="btn btn-ghost text-xl font-bold gap-2">
-          <LayoutDashboard className="w-6 h-6 text-primary" />
-          <span className="hidden sm:inline">Leitungsteam</span>
+          <SgswLogo width={40} height={40} />
+          <span className="hidden sm:inline">Planungs-Portal</span>
         </Link>
 
         {/* Navigation */}

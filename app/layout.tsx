@@ -13,8 +13,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Leitungsteam-Portal | St. Galler Stadtwerke",
-  description: "Plattform zum Planen von Digitalisierungsideen für das Leitungsteam der St. Galler Stadtwerke.",
+  title: "Planungs-Portal | St. Galler Stadtwerke",
+  description: "Planungs-Portal für Digitalisierungsvorhaben der St. Galler Stadtwerke.",
 };
 
 export default function RootLayout({
